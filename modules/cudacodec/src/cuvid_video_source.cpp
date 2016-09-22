@@ -53,6 +53,12 @@ cv::cudacodec::detail::CuvidVideoSource::CuvidVideoSource(const String& fname)
 {
     CUVIDSOURCEPARAMS params;
     std::memset(&params, 0, sizeof(CUVIDSOURCEPARAMS));
+    // Position of rtsp in fname
+    std::size_t rtsp_pos = fname.rfind("rtsp",0); //DEBUG
+    std::cout << "CuvidVideoSource - rtsp_pos: " << rtsp_pos << std::endl; //DEBUG
+    // String to get cuRes error code and name
+    const char* cuRes_code; //DEBUG
+    const char* cuRes_string; //DEBUG
 
     // Fill parameter struct
     params.pUserData = this;                        // will be passed to data handlers
@@ -61,12 +67,21 @@ cv::cudacodec::detail::CuvidVideoSource::CuvidVideoSource(const String& fname)
 
     // now create the actual source
     CUresult cuRes = cuvidCreateVideoSource(&videoSource_, fname.c_str(), &params);
+    cuGetErrorName(cuRes, &cuRes_code); //DEBUG
+    cuGetErrorString(cuRes, &cuRes_string); //DEBUG
+    std::cout << "CuvidVideoSource - cuRes cuGetErrorName: " << std::string(cuRes_code) << " - cuRes cuGetErrorString: " << std::string(cuRes_string) << std::endl; //DEBUG
     if (cuRes == CUDA_ERROR_INVALID_SOURCE)
         throw std::runtime_error("");
+    if (cuRes == CUDA_ERROR_FILE_NOT_FOUND && rtsp_pos == 0) //DEBUG
+        cuRes = CUDA_SUCCESS; //DEBUG
     cuSafeCall( cuRes );
 
     CUVIDEOFORMAT vidfmt;
-    cuSafeCall( cuvidGetSourceVideoFormat(videoSource_, &vidfmt, 0) );
+    cuRes = cuvidGetSourceVideoFormat(videoSource_, &vidfmt, 0); //DEBUG
+    cuGetErrorName(cuRes, &cuRes_code); //DEBUG
+    cuGetErrorString(cuRes, &cuRes_string); //DEBUG
+    std::cout << "cuvidGetSourceVideoFormat - cuRes cuGetErrorName: " << std::string(cuRes_code) << " - cuRes cuGetErrorString: " << std::string(cuRes_string) << std::endl; //DEBUG
+    cuSafeCall( cuRes );
 
     format_.codec = static_cast<Codec>(vidfmt.codec);
     format_.chromaFormat = static_cast<ChromaFormat>(vidfmt.chroma_format);
