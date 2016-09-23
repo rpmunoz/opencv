@@ -40,6 +40,7 @@
 //
 //M*/
 
+#include <iostream> //DEBUG
 #include "cap_ffmpeg_api.hpp"
 #if !(defined(WIN32) || defined(_WIN32) || defined(WINCE))
 # include <pthread.h>
@@ -2584,9 +2585,11 @@ bool InputMediaStream_FFMPEG::open(const char* fileName, int* codec, int* chroma
 
     #if LIBAVFORMAT_BUILD >= CALC_FFMPEG_VERSION(53, 6, 0)
         AVDictionary *d=NULL;
-        av_dict_set(&d, "rtsp_transport", "tcp", 0);
-        av_dict_set(&d, "threads", "1", 0);
+        av_dict_set(&d, "rtsp_transport", "udp", 0); // DEBUG UDP OR TCP
+        //av_dict_set(&d, "threads", "1", 0); // DEBUG Number of threads
+        av_dict_set(&d, "buffer_size", "524288", 0); // DEBUG Buffer size in bytes
         err = avformat_open_input(&ctx_, fileName, 0, &d);
+        std::cout << "OPENCV InputMediaStream_FFMPEG::open - err: " << err << std::endl; //DEBUG
     #else
         err = av_open_input_file(&ctx_, fileName, 0, 0, 0);
     #endif
@@ -2601,6 +2604,7 @@ bool InputMediaStream_FFMPEG::open(const char* fileName, int* codec, int* chroma
     if (err < 0)
         return false;
 
+    std::cout << "OPENCV InputMediaStream_FFMPEG::open - ctx_->nb_streams: " << ctx_->nb_streams << std::endl; //DEBUG
     for (unsigned int i = 0; i < ctx_->nb_streams; ++i)
     {
         #if LIBAVFORMAT_BUILD > 4628
@@ -2673,6 +2677,17 @@ bool InputMediaStream_FFMPEG::open(const char* fileName, int* codec, int* chroma
     // deactivate interrupt callback
     interrupt_metadata.timeout_after_ms = 0;
 #endif
+
+    const char* codec_string[] = {"VideoCodec_MPEG1","VideoCodec_MPEG2","VideoCodec_MPEG4", \
+        "VideoCodec_VC1","VideoCodec_H264","VideoCodec_JPEG","VideoCodec_H264_SVC","VideoCodec_H264_MVC", \
+        "VideoCodec_YUV420","VideoCodec_YV12","VideoCodec_NV12","VideoCodec_YUYV","VideoCodec_UYVY"}; //DBEUG
+    const char* chroma_format_string[] = {"VideoChromaFormat_Monochrome","VideoChromaFormat_YUV420", \
+        "VideoChromaFormat_YUV422", "VideoChromaFormat_YUV444"}; //DEBUG
+
+    std::cout << "OPENCV InputMediaStream_FFMPEG::open - codec: " << codec_string[*codec] << std::endl; //DEBUG
+    std::cout << "OPENCV InputMediaStream_FFMPEG::open - chroma_format: " << chroma_format_string[*chroma_format] << std::endl; //DEBUG
+    std::cout << "OPENCV InputMediaStream_FFMPEG::open - width: " << *width << std::endl; //DEBUG
+    std::cout << "OPENCV InputMediaStream_FFMPEG::open - height: " << *height << std::endl; //DEBUG
 
     return true;
 }
