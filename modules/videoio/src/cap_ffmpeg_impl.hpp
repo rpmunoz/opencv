@@ -40,6 +40,7 @@
 //
 //M*/
 
+#include <iostream>
 #include "cap_ffmpeg_api.hpp"
 #if !(defined(WIN32) || defined(_WIN32) || defined(WINCE))
 # include <pthread.h>
@@ -2546,7 +2547,12 @@ bool InputMediaStream_FFMPEG::open(const char* fileName, int* codec, int* chroma
     #endif
 
     #if LIBAVFORMAT_BUILD >= CALC_FFMPEG_VERSION(53, 6, 0)
-        err = avformat_open_input(&ctx_, fileName, 0, 0);
+//        err = avformat_open_input(&ctx_, fileName, 0, 0);
+				AVDictionary *d=NULL;
+				av_dict_set(&d, "rtsp_transport", "udp", 0);
+				av_dict_set(&d, "buffer_size", "524288", 0);
+				err = avformat_open_input(&ctx_, fileName, 0, &d);
+				std::cout << "OPENCV InputMediaStream_FFMPEG::open - err: " << err << std::endl;
     #else
         err = av_open_input_file(&ctx_, fileName, 0, 0, 0);
     #endif
@@ -2561,6 +2567,7 @@ bool InputMediaStream_FFMPEG::open(const char* fileName, int* codec, int* chroma
     if (err < 0)
         return false;
 
+		std::cout << "OPENCV InputMediaStream_FFMPEG::open - ctx_->nb_streams: " << ctx_->nb_streams << std::endl;
     for (unsigned int i = 0; i < ctx_->nb_streams; ++i)
     {
         #if LIBAVFORMAT_BUILD > 4628
